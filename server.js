@@ -1,12 +1,12 @@
-express = require('express');
-routes = require('./routes/index');
+const express = require('express');
+const router = require('./routes/index');
 
-app = express();
+const app = express();
 
-PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
-app.use('/', routes);
+app.use('/', router);
 
 app.listen(PORT, () => {
-  console.log(`Server listening at PORT: ${PORT)`);
-  });
+  console.log(`Server listening at PORT: ${PORT}`);
+});
