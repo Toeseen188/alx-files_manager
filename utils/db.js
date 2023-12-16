@@ -7,15 +7,19 @@ class DBClient {
     this.port = process.env.DB_PORT || 27017;
     this.database = process.env.DB_DATABASE || 'file_manager';
     this.url = `mongodb://${this.host}:${this.port}`;
-    this.client = new MongoClient(this.url, { useNewUrlParser: true, useUnifiedTopology: true });
+    this.options = { useNewUrlParser: true, useUnifiedTopology: true };
+    this.client = new MongoClient(this.url, this.options);
   }
 
   // check if mongodb is connected
   isAlive() {
     try {
-      this.client.connect();
-      return true;
-    } catch (err) {
+      if (this.client.connect()) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error connecting:', error);
       return false;
     }
   }
@@ -31,7 +35,7 @@ class DBClient {
       console.error('Cannot connect to database');
       throw error;
     } finally {
-      this.client.close();
+      await this.client.close();
     }
   }
 
@@ -46,9 +50,10 @@ class DBClient {
       console.error('Cannot connect to database');
       throw error;
     } finally {
-      this.client.close();
+      await this.client.close();
     }
   }
 }
+
 const dbClient = new DBClient();
 module.exports = dbClient;
