@@ -10,7 +10,7 @@ class AppController {
     this.numUsers = null;
     this.numFiles = null;
 
-  // Bind methods to the instance
+    // Bind methods to the instance
     this.getStatus = this.getStatus.bind(this);
     this.getStats = this.getStats.bind(this);
   }

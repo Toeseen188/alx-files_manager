@@ -53,6 +53,36 @@ class DBClient {
       await this.client.close();
     }
   }
+
+  // check if user is present
+  async getUserByEmail(email) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('users');
+      const user = await collection.findOne(email);
+      return user != null;
+    } catch (error) {
+      console.error('Error finding the mail');
+      throw error;
+    } finally {
+      this.client.close();
+    }
+  }
+
+  // insert a new user into user collection
+  async insertUser(newUser) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('users');
+      const user = collection.insertOne(newUser);
+      return user;
+    } catch (error) {
+      console.error('Error adding new user');
+      throw error;
+    } finally {
+      this.client.close();
+    }
+  }
 }
 
 const dbClient = new DBClient();
