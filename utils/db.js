@@ -5,7 +5,7 @@ class DBClient {
   constructor() {
     this.host = process.env.DB_HOST || 'localhost';
     this.port = process.env.DB_PORT || 27017;
-    this.database = process.env.DB_DATABASE || 'file_manager';
+    this.database = process.env.DB_DATABASE || 'files_manager';
     this.url = `mongodb://${this.host}:${this.port}`;
     this.options = { useNewUrlParser: true, useUnifiedTopology: true };
     this.client = new MongoClient(this.url, this.options);
@@ -34,8 +34,6 @@ class DBClient {
     } catch (error) {
       console.error('Cannot connect to database');
       throw error;
-    } finally {
-      await this.client.close();
     }
   }
 
@@ -49,8 +47,6 @@ class DBClient {
     } catch (error) {
       console.error('Cannot connect to database');
       throw error;
-    } finally {
-      await this.client.close();
     }
   }
 
@@ -59,13 +55,11 @@ class DBClient {
     try {
       const db = this.client.db(this.database);
       const collection = db.collection('users');
-      const user = await collection.findOne(email);
+      const user = await collection.findOne({ email });
       return user != null;
     } catch (error) {
       console.error('Error finding the mail');
       throw error;
-    } finally {
-      this.client.close();
     }
   }
 
@@ -79,8 +73,6 @@ class DBClient {
     } catch (error) {
       console.error('Error adding new user');
       throw error;
-    } finally {
-      this.client.close();
     }
   }
 }

@@ -6,12 +6,10 @@ const dbClient = require('../utils/db');
 class UsersController {
   async postNew(req, res) {
     try {
-      if (!req.body || !req.body.email || !req.body.password) {
+      if (!req.body) {
         res.status(400).json({ error: 'Invalid request body' });
       }
-      console.log('Request Body', req);
       const { email, password } = req.body;
-
       // check if email is not given
       if (!email) {
         res.status(400).json({ error: 'Missing email' });
@@ -39,13 +37,12 @@ class UsersController {
       };
 
       // insert newUser into users collection
-      await dbClient.insertNewUser(newUser);
+      await dbClient.insertUser(newUser);
 
       // return newUser with email and id only
-      res.status(201).json({ email: newUser.email, id: newUser._id });
+      res.status(201).json({ id: newUser._id, email: newUser.email });
     } catch (error) {
-      console.error('Error /users endpoint');
-      throw error;
+      console.error('Error /users endpoint', error);
     }
   }
 }
