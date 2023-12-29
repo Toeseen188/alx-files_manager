@@ -1,7 +1,7 @@
 /* eslint-disable class-methods-use-this */
-
 const crypto = require('crypto');
 const dbClient = require('../utils/db');
+const redisClient = require('../utils/redis');
 
 class UsersController {
   async postNew(req, res) {
@@ -13,11 +13,13 @@ class UsersController {
       // check if email is not given
       if (!email) {
         res.status(400).json({ error: 'Missing email' });
+        return;
       }
 
       // check if password is not given
       if (!password) {
         res.status(400).json({ error: 'Missing password' });
+        return;
       }
 
       // check if user existed
@@ -25,6 +27,7 @@ class UsersController {
 
       if (existedUser) {
         res.status(400).json({ error: 'Already exist' });
+        return;
       }
 
       // hash password
@@ -43,6 +46,30 @@ class UsersController {
       res.status(201).json({ id: newUser._id, email: newUser.email });
     } catch (error) {
       console.error('Error /users endpoint', error);
+    }
+  }
+
+  // get user/me endpoint
+  async getMe(req, res) {
+    try {
+      const xToken = req.header('X-Token');
+
+      if (!xToken) {
+        res.status(401).json({ error: 'X-Token not found in the header' });
+      }
+      const token = `auth_${xToken}`;
+      console.log(token);
+      const userId = await redisClient.get(token);
+      const user = await dbClient.getUserById(userId);
+      // respond authorized if user is not found
+      if (!user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      res.json({ id: user._id, email: user.email });
+    } catch (error) {
+      console.error('Error with /user/me endpoint', error);
+      throw error;
     }
   }
 }
