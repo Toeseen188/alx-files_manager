@@ -105,6 +105,19 @@ class DBClient {
       throw error;
     }
   }
+
+  // insert a new file into file collection
+  async insertFile(newFile) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('files');
+      const file = collection.insertOne(newFile);
+      return file;
+    } catch (error) {
+      console.error('Error adding new user');
+      throw error;
+    }
+  }
 }
 
 const dbClient = new DBClient();
