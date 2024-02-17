@@ -82,7 +82,14 @@ class FilesController {
         newFileDoc.localPath = localPath;
       }
       await dbClient.insertFile(newFileDoc);
-      res.status(201).json({ newFileDoc });
+      res.status(201).json({
+        id: newFileDoc._id,
+        userId: newFileDoc.userId,
+        name: newFileDoc.name,
+        type: newFileDoc.type,
+        isPublic: newFileDoc.isPublic,
+        parentId: newFileDoc.parentId,
+      });
     } catch (error) {
       console.error('Error with uploadfile endpoint', error);
     }
