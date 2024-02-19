@@ -58,7 +58,6 @@ class UsersController {
         res.status(401).json({ error: 'X-Token not found in the header' });
       }
       const token = `auth_${xToken}`;
-      console.log(token);
       const userId = await redisClient.get(token);
       const user = await dbClient.getUserById(userId);
       // respond authorized if user is not found

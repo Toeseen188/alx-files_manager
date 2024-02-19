@@ -98,7 +98,7 @@ class DBClient {
     try {
       const db = this.client.db(this.database);
       const collection = db.collection('users');
-      const user = collection.insertOne(newUser);
+      const user = await collection.insertOne(newUser);
       return user;
     } catch (error) {
       console.error('Error adding new user');
@@ -111,14 +111,39 @@ class DBClient {
     try {
       const db = this.client.db(this.database);
       const collection = db.collection('files');
-      const file = collection.insertOne(newFile);
+      const file = await collection.insertOne(newFile);
       return file;
     } catch (error) {
       console.error('Error adding new user');
       throw error;
     }
   }
-}
 
+  // find a file by id
+  async findFileById(id) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('files');
+      const file = await collection.findOne({ _id: id });
+      return file;
+    } catch (error) {
+      console.error('Error finding file by id');
+      throw error;
+    }
+  }
+
+  // find a file by parentId
+  async findFileByParentId(parentId) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('files');
+      const file = await collection.find({ parentId }).toArray();
+      return file;
+    } catch (error) {
+      console.error('Error while finding file by parentId');
+      throw error;
+    }
+  }
+}
 const dbClient = new DBClient();
 module.exports = dbClient;

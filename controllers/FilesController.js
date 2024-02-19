@@ -94,6 +94,78 @@ class FilesController {
       console.error('Error with uploadfile endpoint', error);
     }
   }
+
+  // get files by id
+  async getShow(req, res) {
+    try {
+      // extract token from request header
+      const xToken = req.header('x-Token');
+
+      if (!xToken) {
+        res.status(401).json({ error: 'xToken can be found in the header' });
+      }
+      const token = `auth_${xToken}`;
+      const userId = await redisClient.get(token);
+
+      // check if user is authorized
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { id } = req.params;
+      const file = await dbClient.findFileById(id);
+
+      // if no file is not found
+      if (!file) {
+        res.status(401).json({ error: 'Not found' });
+      }
+
+      res.status(201).json({
+        id: file._id,
+        userId: file.userId,
+        name: file.name,
+        type: file.type,
+        isPublic: file.isPublic,
+        parentId: file.parentId,
+      });
+    } catch (error) {
+      console.error('Error while getting file by id', error);
+    }
+  }
+
+  // get all files, parentId
+  async getIndex(req, res) {
+    try {
+      const xToken = req.header('x-Token');
+
+      // if token is not found
+      if (!xToken) {
+        res.status(401).json({ error: 'Token not found in header' });
+      }
+
+      const token = `auth_${xToken}`;
+      const userId = redisClient.get(token);
+
+      // if userId is not found, not authorized
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const parentId = req.query.parentId || 0;
+      const page = req.query.page || 0;
+      const perPage = 20;
+      const skip = page * perPage;
+      const files = await dbClient.findFileByParentId(parentId);
+
+      if (!files || files.length === 0) {
+        return res.status(404).json({ error: 'No files found' });
+      }
+      const paginatedFiles = files.slice(skip, skip + perPage);
+      res.status(201).json(paginatedFiles);
+    } catch (error) {
+      console.error('Error while getting all files', error);
+    }
+  }
 }
 
 const fileController = new FilesController();
