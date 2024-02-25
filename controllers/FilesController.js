@@ -2,7 +2,7 @@
 const fs = require('fs').promises;
 const uuid = require('uuid');
 const path = require('path');
-const ObjectId = require('mongodb');
+const { ObjectId } = require('mongodb');
 const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
@@ -46,7 +46,7 @@ class FilesController {
       // if parentId
       // let parentFile;
       if (parentId) {
-        const parentFile = await dbClient.findOne(ObjectId(parentId));
+        const parentFile = await dbClient.findFileByParentId(ObjectId(parentId));
         if (!parentFile) {
           res.status(400).json({ error: 'Parent not found' });
           return;
@@ -110,6 +110,7 @@ class FilesController {
       // check if user is authorized
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const { id } = req.params;
@@ -117,7 +118,8 @@ class FilesController {
 
       // if no file is not found
       if (!file) {
-        res.status(401).json({ error: 'Not found' });
+        res.status(404).json({ error: 'Not found' });
+        return;
       }
 
       res.status(201).json({
@@ -141,6 +143,7 @@ class FilesController {
       // if token is not found
       if (!xToken) {
         res.status(401).json({ error: 'Token not found in header' });
+        return;
       }
 
       const token = `auth_${xToken}`;
@@ -149,6 +152,7 @@ class FilesController {
       // if userId is not found, not authorized
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const parentId = req.query.parentId || 0;
@@ -158,12 +162,84 @@ class FilesController {
       const files = await dbClient.findFileByParentId(parentId);
 
       if (!files || files.length === 0) {
-        return res.status(404).json({ error: 'No files found' });
+        res.status(404).json({ error: 'No files found' });
       }
       const paginatedFiles = files.slice(skip, skip + perPage);
       res.status(201).json(paginatedFiles);
     } catch (error) {
       console.error('Error while getting all files', error);
+    }
+  }
+
+  // make public and isPublic
+  async putPublish(req, res) {
+    try {
+      const xToken = req.header('x-Token');
+
+      // if token is not found
+      if (!xToken) {
+        res.status(401).json({ error: 'Token not found in header' });
+        return;
+      }
+
+      const token = `auth_${xToken}`;
+      const userId = redisClient.get(token);
+
+      // if userId is not found, not authorized
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { id } = req.params;
+
+      const file = await dbClient.findFileById(id);
+
+      if (!file) {
+        res.status(404).json({ error: 'Not found' });
+        return;
+      }
+
+      file.isPublic = true;
+      res.status(200).json(file);
+    } catch (error) {
+      console.error('Error put endpoint /:id/public', error);
+    }
+  }
+
+  // make unpublic and make a file unpublic
+  async putUnpublish(req, res) {
+    try {
+      const xToken = req.header('x-Token');
+
+      // if token is not found
+      if (!xToken) {
+        res.status(401).json({ error: 'Token not found in header' });
+        return;
+      }
+
+      const token = `auth_${xToken}`;
+      const userId = redisClient.get(token);
+
+      // if userId is not found, not authorized
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { id } = req.params;
+
+      const file = await dbClient.findFileById(id);
+
+      if (!file) {
+        res.status(404).json({ error: 'Not found' });
+        return;
+      }
+
+      file.isPublic = false;
+      res.status(200).json(file);
+    } catch (error) {
+      console.error('Error put endpoint /:id/unpublic', error);
     }
   }
 }
