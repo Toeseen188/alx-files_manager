@@ -3,6 +3,7 @@ const fs = require('fs').promises;
 const uuid = require('uuid');
 const path = require('path');
 const { ObjectId } = require('mongodb');
+const mime = require('mime-types');
 const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
@@ -240,6 +241,71 @@ class FilesController {
       res.status(200).json(file);
     } catch (error) {
       console.error('Error put endpoint /:id/unpublic', error);
+    }
+  }
+
+  // get file by id
+  async getFile(req, res) {
+    try {
+      const xToken = req.header('x-Token');
+
+      // if token is not found
+      if (!xToken) {
+        res.status(401).json({ error: 'Token not found in header' });
+        return;
+      }
+
+      const token = `auth_${xToken}`;
+      const userId = redisClient.get(token);
+
+      // if userId is not found, not authorized
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { id } = req.params;
+
+      const file = await dbClient.findFileById(id);
+
+      if (!file) {
+        res.status(404).json({ error: 'Not found' });
+        return;
+      }
+
+      if (file.isPublic === false || file.userId !== userId) {
+        res.status(404).json({ error: 'Not found' });
+        return;
+      }
+
+      if (file.type === 'folder') {
+        res.status(400).json({ error: "A folder doesn't have content" });
+        return;
+      }
+      const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
+      const localPath = path.join(folderPath, id);
+
+      if (!fs.existsSync(localPath)) {
+        res.status(404).json({ error: 'Not found' });
+        return;
+      }
+      const mimeType = mime.lookup(localPath);
+
+      if (!mimeType) {
+        res.status(500).json({ error: 'Unknown MIME type' });
+        return;
+      }
+
+      fs.readFile(localPath, (err, data) => {
+        if (err) {
+          res.status(400).json({ error: 'Error while reading data from file' });
+          return;
+        }
+        res.set('content-type', mimeType);
+        res.send(data);
+      });
+    } catch (error) {
+      console.error('Error while getting /:id/data', error);
     }
   }
 }
